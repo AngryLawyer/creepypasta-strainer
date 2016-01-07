@@ -14,5 +14,5 @@ let get_article_list () =
     eprintf "%s" (String.concat strings)
 
 let () =
-    let _ = get_article_list () in
+    ( get_article_list () >>> fun () -> Shutdown.shutdown 0);
     never_returns (Scheduler.go())
