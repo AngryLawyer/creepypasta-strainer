@@ -27,14 +27,17 @@ let get_story_from_id id =
     >>| Story_parser.parse_story
 
 let () =
+    let db = Sqlite3EZ.db_open "creepypasta.db" in
     let _ = ( Deferred.all (List.map [potm; spotlighted] ~f:get_ids_from_url)
     >>| fun id_lists ->
         let id_list = List.concat id_lists in
         let rng = Random.State.make_self_init () in
-        let shuffled = List.permute ?random_state:(Some rng) id_list in
+        let filtered_id_list = Database.filter_ids db "creepypasta.wikia.com" id_list in
+        let shuffled = List.permute ?random_state:(Some rng) filtered_id_list in
         get_story_from_id (List.hd_exn shuffled)
     >>| fun story ->
         eprintf "%s\n" story;
+        Sqlite3EZ.db_close db;
         Shutdown.shutdown 0
     ) in
     never_returns (Scheduler.go())
