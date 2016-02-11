@@ -26,6 +26,9 @@ let get_story_from_id id =
     get_url_json (sprintf "http://creepypasta.wikia.com/api/v1/Articles/AsSimpleJson?id=%u" id)
     >>| Story_parser.parse_story
 
+let get_newest_story id_list =
+    get_story_from_id (List.hd_exn id_list)
+
 let () =
     let db = Sqlite3EZ.db_open "creepypasta.db" in
     let _ = ( Deferred.all (List.map [potm; spotlighted] ~f:get_ids_from_url)
@@ -34,7 +37,7 @@ let () =
         let rng = Random.State.make_self_init () in
         let filtered_id_list = Database.filter_ids db "creepypasta.wikia.com" id_list in
         let shuffled = List.permute ?random_state:(Some rng) filtered_id_list in
-        get_story_from_id (List.hd_exn shuffled)
+        get_newest_story shuffled
     >>| fun story ->
         eprintf "%s\n" story;
         Sqlite3EZ.db_close db;
