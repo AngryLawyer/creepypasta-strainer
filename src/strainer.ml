@@ -29,8 +29,8 @@ let get_story_from_id id =
 let get_id_list () =
     Deferred.all (List.map [potm; spotlighted] ~f:fun url -> try_with (fun () -> get_ids_from_url url))
     >>| function
-        | [Ok first; Ok second] -> return (Ok (List.concat [first; second]))
-        | _ -> return (Error "COULD NOT CONNECT")
+        | [Ok first; Ok second] -> (Ok (List.concat [first; second]))
+        | _ -> (Error "COULD NOT CONNECT")
 
 let get_newest_story id_list =
     match id_list with
@@ -40,14 +40,21 @@ let get_newest_story id_list =
             | Error _ -> "COULD NOT CONNECT")
     | [] -> return "NO STORIES FOUND"
 
-let () =
-    let db = Sqlite3EZ.db_open "creepypasta.db" in
-    let _ = (get_id_list ()
-    >>| fun id_list ->
+let deal_with_maybe_id_list db maybe_list =
+    match maybe_list with
+    | Ok id_list ->
         let rng = Random.State.make_self_init () in
         let filtered_id_list = Database.filter_ids db "creepypasta.wikia.com" id_list in
         let shuffled = List.permute ?random_state:(Some rng) filtered_id_list in
         get_newest_story shuffled
+    | Error e ->
+        return e
+
+let () =
+    let db = Sqlite3EZ.db_open "creepypasta.db" in
+    let _ = (get_id_list ()
+    >>| fun maybe_list ->
+        deal_with_maybe_id_list db maybe_list
     >>| fun story ->
         eprintf "%s\n" story;
         Sqlite3EZ.db_close db;
