@@ -27,7 +27,9 @@ let get_story_from_id id =
     >>| Story_parser.parse_story
 
 let get_newest_story id_list =
-    get_story_from_id (List.hd_exn id_list)
+    match id_list with
+    | head :: _ -> get_story_from_id head
+    | [] -> return "NO STORIES FOUND"
 
 let () =
     let db = Sqlite3EZ.db_open "creepypasta.db" in
