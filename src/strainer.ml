@@ -26,16 +26,24 @@ let get_story_from_id id =
     get_url_json (sprintf "http://creepypasta.wikia.com/api/v1/Articles/AsSimpleJson?id=%u" id)
     >>| Story_parser.parse_story
 
+let get_id_list () =
+    Deferred.all (List.map [potm; spotlighted] ~f:fun url -> try_with (fun () -> get_ids_from_url url))
+    >>| function
+        | [Ok first; Ok second] -> return (Ok (List.concat [first; second]))
+        | _ -> return (Error "COULD NOT CONNECT")
+
 let get_newest_story id_list =
     match id_list with
-    | head :: _ -> get_story_from_id head
+    | head :: _ -> try_with (fun () -> get_story_from_id head)
+        >>| (function
+            | Ok story -> story
+            | Error _ -> "COULD NOT CONNECT")
     | [] -> return "NO STORIES FOUND"
 
 let () =
     let db = Sqlite3EZ.db_open "creepypasta.db" in
-    let _ = ( Deferred.all (List.map [potm; spotlighted] ~f:get_ids_from_url)
-    >>| fun id_lists ->
-        let id_list = List.concat id_lists in
+    let _ = (get_id_list ()
+    >>| fun id_list ->
         let rng = Random.State.make_self_init () in
         let filtered_id_list = Database.filter_ids db "creepypasta.wikia.com" id_list in
         let shuffled = List.permute ?random_state:(Some rng) filtered_id_list in
