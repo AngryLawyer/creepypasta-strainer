@@ -44,14 +44,14 @@ let () =
     let db = Sqlite3EZ.db_open "creepypasta.db" in
     let _ = (get_id_list ()
     >>| fun maybe_list ->
-        match maybe_list with
+        (match maybe_list with
         | Ok id_list ->
             let rng = Random.State.make_self_init () in
             let filtered_id_list = Database.filter_ids db "creepypasta.wikia.com" id_list in
             let shuffled = List.permute ?random_state:(Some rng) filtered_id_list in
             get_newest_story shuffled
         | Error e ->
-            return e
+            return e)
     >>| fun story ->
         eprintf "%s\n" story;
         Sqlite3EZ.db_close db;
