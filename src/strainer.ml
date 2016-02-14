@@ -15,29 +15,36 @@ let get_ids_from_article_list json =
     let open Yojson.Basic.Util in
     let entries = (json |> member "items" |> to_list) in
     List.map entries ~f:(fun entry ->
-        entry |> member "id" |> to_string
+        sprintf "%u" (entry |> member "id" |> to_int)
     )
 
 let get_ids_from_url url =
     get_url_json url
     >>| get_ids_from_article_list
 
-let get_story_from_id id =
+let get_story_from_id db id =
     get_url_json (sprintf "http://creepypasta.wikia.com/api/v1/Articles/AsSimpleJson?id=%s" id)
-    >>| Story_parser.parse_story
+    >>| fun story ->
+        Database.log_id db "creepypasta.wikia.com" id;
+        Story_parser.parse_story story
 
 let get_id_list () =
     Deferred.all (List.map [potm; spotlighted] ~f:fun url -> try_with (fun () -> get_ids_from_url url))
     >>| function
         | [Ok first; Ok second] -> (Ok (List.concat [first; second]))
-        | _ -> (Error "COULD NOT CONNECT")
+        | otherwise ->
+            let unpacked_errors = List.map otherwise ~f:(function
+                | Error e -> Exn.to_string e
+                |_ -> "") in
+            let stringified_errors = String.concat unpacked_errors ~sep:"-" in
+            Error (sprintf "COULD NOT CONNECT %s" stringified_errors)
 
-let get_newest_story id_list =
+let get_newest_story db id_list =
     match id_list with
-    | head :: _ -> try_with (fun () -> get_story_from_id head)
+    | head :: _ -> try_with (fun () -> get_story_from_id db head)
         >>| (function
             | Ok story -> story
-            | Error _ -> "COULD NOT CONNECT")
+            | Error e -> sprintf "COULD NOT CONNECT - %s" (Exn.to_string e))
     | [] -> return "NO STORIES FOUND"
 
 let () =
@@ -49,7 +56,7 @@ let () =
             let rng = Random.State.make_self_init () in
             let filtered_id_list = Database.filter_ids db "creepypasta.wikia.com" id_list in
             let shuffled = List.permute ?random_state:(Some rng) filtered_id_list in
-            get_newest_story shuffled
+            get_newest_story db shuffled
         | Error e ->
             return e)
     >>| fun story ->
