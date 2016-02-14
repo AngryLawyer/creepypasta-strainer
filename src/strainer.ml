@@ -15,7 +15,7 @@ let get_ids_from_article_list json =
     let open Yojson.Basic.Util in
     let entries = (json |> member "items" |> to_list) in
     List.map entries ~f:(fun entry ->
-        entry |> member "id" |> to_int
+        entry |> member "id" |> to_string
     )
 
 let get_ids_from_url url =
@@ -23,7 +23,7 @@ let get_ids_from_url url =
     >>| get_ids_from_article_list
 
 let get_story_from_id id =
-    get_url_json (sprintf "http://creepypasta.wikia.com/api/v1/Articles/AsSimpleJson?id=%u" id)
+    get_url_json (sprintf "http://creepypasta.wikia.com/api/v1/Articles/AsSimpleJson?id=%s" id)
     >>| Story_parser.parse_story
 
 let get_id_list () =
