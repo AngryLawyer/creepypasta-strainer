@@ -8,8 +8,9 @@ let wrap x =
 
 let parse_title json =
     let open Yojson.Basic.Util in
+    let centred_text = Printer.with_justify Printer.Center (fun () -> wrap (json |> member "title" |> to_string)) in
     concat_newlines [
-        wrap (json |> member "title" |> to_string);
+        centred_text;
         ""
     ]
 
@@ -42,4 +43,4 @@ let parse_story json =
     let open Yojson.Basic.Util in
     let sections = json |> member "sections" |> to_list in
     let text_sections = List.map sections ~f:parse_section in
-    String.concat ~sep:"\n" text_sections
+    String.concat [Printer.init (); (String.concat ~sep:"\n" text_sections)] ~sep:""
