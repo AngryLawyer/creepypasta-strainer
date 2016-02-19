@@ -61,6 +61,7 @@ let () =
             return e)
     >>| fun story ->
         eprintf "%s\n" story;
+        Serial.write "/dev/ttyAMA0" story;
         Sqlite3EZ.db_close db;
         Shutdown.shutdown 0
     ) in
