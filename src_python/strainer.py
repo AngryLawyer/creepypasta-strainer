@@ -67,7 +67,7 @@ shuffled = sample(ids, len(ids))
 newest = get_newest_story(c, shuffled)
 
 printer = ThermalPrinter()
-printer.print_text(newest)
+printer.print_text(parse_story(newest))
 
 conn.commit()
 conn.close()
