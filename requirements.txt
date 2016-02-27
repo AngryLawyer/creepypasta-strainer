@@ -1,0 +1,2 @@
+requests==2.9.1
+pyserial==3.0.1
