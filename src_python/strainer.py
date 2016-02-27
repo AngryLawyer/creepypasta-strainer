@@ -66,8 +66,11 @@ stripped = strip_printed_stories(c, ids, "creepypasta.wikia.com")
 shuffled = sample(ids, len(ids))
 newest = get_newest_story(c, shuffled)
 
+lines = parse_story(newest).encode('ascii', 'replace')
 printer = ThermalPrinter()
-printer.print_text(parse_story(newest.encode('ascii', 'replace')))
+
+for line in lines.split("\n"):
+    printer.print_text("\n" + line)
 
 conn.commit()
 conn.close()
